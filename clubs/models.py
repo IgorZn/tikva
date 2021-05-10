@@ -1,7 +1,9 @@
 from datetime import datetime
+from django.contrib import admin
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth import get_user_model
 
 # Create your models here.
 
@@ -16,6 +18,10 @@ from django.contrib.auth.models import AbstractUser
 # 			StudentProfile 3 (text)
 # 			StudentProfile 4 (file)
 # 			StudentProfile 5 (video)
+
+class FullNameManager(models.Manager):
+	def get_queryset(self):
+		return super().get_user_model()
 
 
 class User(AbstractUser):
@@ -49,7 +55,7 @@ class Trainer(models.Model):
 
 
 class StudentsGroup(models.Model):
-	course = models.ForeignKey(Trainer, related_name='students_group', on_delete=models.CASCADE)
+	trainer = models.ForeignKey(Trainer, related_name='students_group', on_delete=models.CASCADE)
 	title = models.CharField(max_length=200)
 	description = models.TextField(blank=True)
 
@@ -75,15 +81,33 @@ class StudentProfile(models.Model):
 		(BLUE, BLUE),
 	)
 
+	def get_full_names(self):
+		USERS = get_user_model()
+		FNames = [name.get_full_name().__str__() for name in USERS.objects.all() if len(name.get_full_name()) > 1]
+		return FNames
+
+	FULL_NAMES = tuple(
+		zip(
+			get_full_names('self'), get_full_names('self')
+		)
+	)
+
 	user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-	photo = models.ImageField(upload_to='photo/%Y/%m/%d')
-	name = models.CharField(max_length=200)
+	full_name = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='full_name', on_delete=models.CASCADE, null=True)
+	student_group = models.ForeignKey(StudentsGroup, related_name='group', on_delete=models.CASCADE, null=True)
+	trainer = models.ForeignKey(Trainer, related_name='trainer', on_delete=models.CASCADE, null=True)
+	photo = models.ImageField(upload_to='photo/%Y/%m/%d', blank=True, null=True)
+	name = models.CharField(max_length=200, blank=True, null=True)
 	description = models.TextField(blank=True)
-	phone = models.CharField(max_length=50)
-	email = models.CharField(max_length=50)
+	phone = models.CharField(max_length=50, blank=True, null=True)
+	email = models.CharField(max_length=50, blank=True, null=True)
 	join_date = models.DateTimeField(auto_now_add=True)
 	update_date = models.DateTimeField(auto_now=True)
 	belt = models.CharField(max_length=20, choices=BELTS, default=WHITE)
+
+	@admin.display
+	def full_names(self):
+		return self.full_name.
 
 	def __str__(self):
 		"""
