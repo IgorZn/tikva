@@ -83,7 +83,7 @@ class StudentProfile(models.Model):
 
 	def get_full_names(self):
 		USERS = get_user_model()
-		FNames = [name.get_full_name().__str__() for name in USERS.objects.all() if len(name.get_full_name()) > 1]
+		FNames = [name.get_full_name() for name in USERS.objects.all() if len(name.get_full_name()) > 1]
 		return FNames
 
 	FULL_NAMES = tuple(
@@ -93,7 +93,7 @@ class StudentProfile(models.Model):
 	)
 
 	user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-	full_name = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='full_name', on_delete=models.CASCADE, null=True)
+	full_name = models.CharField(max_length=90, choices=FULL_NAMES, default='None')
 	student_group = models.ForeignKey(StudentsGroup, related_name='group', on_delete=models.CASCADE, null=True)
 	trainer = models.ForeignKey(Trainer, related_name='trainer', on_delete=models.CASCADE, null=True)
 	photo = models.ImageField(upload_to='photo/%Y/%m/%d', blank=True, null=True)
@@ -105,13 +105,9 @@ class StudentProfile(models.Model):
 	update_date = models.DateTimeField(auto_now=True)
 	belt = models.CharField(max_length=20, choices=BELTS, default=WHITE)
 
-	@admin.display
-	def full_names(self):
-		return self.full_name.
-
 	def __str__(self):
 		"""
 		how it will display at Admin area
 		:return:
 		"""
-		return self.name
+		return self.full_name
